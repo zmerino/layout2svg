@@ -4,7 +4,9 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-
+import xml.etree.ElementTree as ET
+import yaml
+import argparse
 import yaml
 import gdstk
 from lxml import etree
@@ -13,8 +15,86 @@ from .data import *
 
 _LAYOUT_FILE_EXTENSIONS = [".oas", ".oasis", ".gds", ".gdsii"]
 
-_LAYERSTACK_FILE_EXTENSIONS = [".yaml", ".yml", ".ymls"]
+_LAYERSTACK_FILE_EXTENSIONS = [".yaml", ".yml", ".ymls", ".lyp"]
 
+def parse_lyp_to_yaml(lyp_file, yaml_file):
+    tree = ET.parse(lyp_file)
+    root = tree.getroot()
+
+    layers = {}
+
+    for props in root.findall("properties"):
+        source = props.findtext("source")
+        fill_color = props.findtext("fill-color")
+        name = props.findtext("name") or "unnamed_layer"
+
+        if source:
+            try:
+                layer_str, _ = source.split("@")
+                layer_num, datatype = map(int, layer_str.split("/"))
+
+                key = f"layer_{layer_num}_datatype_{datatype}"
+
+                rgba = [255, 255, 255, 180]  # Default semi-transparent white
+                if fill_color and fill_color.startswith("#") and len(fill_color) == 7:
+                    rgba = [
+                        int(fill_color[1:3], 16),
+                        int(fill_color[3:5], 16),
+                        int(fill_color[5:7], 16),
+                        180
+                    ]
+
+                # Fill in with placeholders or default values, customize as needed
+                layer_entry = {
+                    "metadata": {
+                        "type": "routing",  # or "gate", "metal", etc.
+                        "keys": [name.replace(" ", ""), name[:2].upper()],
+                        "rgba": rgba,
+                        "text": "\\"
+                    },
+                    "properties": {
+                        "ly": layer_num,
+                        "dt": datatype,
+                        "zh": 1.5,       # placeholder z-height in um
+                        "th": 0.36,      # thickness in um
+                        "mw": 0.14,      # minimum width in um
+                        "sqrres": 0.125, # sheet resistance in ohm/sq
+                        "dc_avgcd": 2.8, # mA/um
+                        "ac_rmscd": 6.1, # mA/um
+                        "sqrcap": 2.1    # fF/um
+                    }
+                }
+
+                layers[key] = layer_entry
+
+            except Exception as e:
+                print(f"Warning: skipping invalid source '{source}': {e}")
+
+    # Full layout dictionary
+    layout = {
+        "library": {
+            "name": "mock_tech",
+            "version": "v1.0",
+            "description": "Semiconductor technology layerstack for Double Dot Design",
+            "author": "Zach D. Merino"
+        },
+        "units": {
+            "db": 1000.0e-6,
+            "dbu": 1.0e-6,
+            "sec": 1.0e-9,
+            "ohm": 1.0,
+            "far": 1.0e-15,
+            "amp": 1.0e-3,
+            "volt": 1.0
+        },
+        "grid": 0.0050,
+        "layers": layers
+    }
+
+    with open(yaml_file, "w") as f:
+        yaml.dump(layout, f, sort_keys=False)
+
+    print(f"SUCCESS: Converted {len(layers)} layers in .lyp file to {yaml_file}")
 
 def load_layout(fp: str) -> Optional[gdstk.Library]:
     """Load a layout from a GDSII file.
@@ -62,6 +142,17 @@ def load_layerstack(fp: str) -> LayerStack:
         raise ValueError(
             f"Unsupported file extension: {ext}, Supported extensions: {_LAYERSTACK_FILE_EXTENSIONS}"
         )
+
+    # convert KLayout .lyp layer file into proper yaml format
+    print(ext)
+    if ext == '.lyp':
+        print('.lyp FOUND')
+        lyp_fp = fp
+        new_yaml_fp = lyp_fp.replace('.lyp', '.yaml')
+        parse_lyp_to_yaml(lyp_fp,new_yaml_fp)
+
+        # re-assign file path name 
+        fp = new_yaml_fp
 
     layerstack = {}
     layerstack_yaml = None

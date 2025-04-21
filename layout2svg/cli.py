@@ -27,6 +27,8 @@ import platform
 import sys
 import tempfile
 import subprocess
+import shutil
+
 try:
     from loguru import logger
 except ImportError as e:
@@ -49,7 +51,10 @@ try:
     elif platform.system() == "Darwin":
         INKSCAPE_BIN = subprocess.check_output(["which", "inkscape"]).decode("utf-8").strip()
     elif platform.system() == "Linux":
-        INKSCAPE_BIN = subprocess.check_output(["command", "-v", "inkscape"]).decode("utf-8").strip()
+        # INKSCAPE_BIN = subprocess.check_output(["command", "-v", "inkscape"]).decode("utf-8").strip()
+        INKSCAPE_BIN = shutil.which("inkscape")
+        if INKSCAPE_BIN is None:
+            raise RuntimeError("Inkscape not found in PATH")
     else:
         print("Error: Unsupported platform.")
         exit(1)
@@ -72,16 +77,21 @@ def main():
     except AssertionError as e:
         sys.exit("Failed: No output specified.")
     
-    try: 
-        # import layout
-        layerstack = load_layerstack(layerstack_file)
-        # import layerstack to generate svg layer info
-        layout = load_layout(in_file)
-    except Exception as e:
-        if verbose:
-            logger.error("Could not load layout or layerstack: ")
-            logger.exception(e)
-        sys.exit("Failed: Could not load input files.")
+
+    # import layout
+    layerstack = load_layerstack(layerstack_file)
+    # import layerstack to generate svg layer info
+    layout = load_layout(in_file)
+    # try: 
+    #     # import layout
+    #     layerstack = load_layerstack(layerstack_file)
+    #     # import layerstack to generate svg layer info
+    #     layout = load_layout(in_file)
+    # except Exception as e:
+    #     if verbose:
+    #         logger.error("Could not load layout or layerstack: ")
+    #         logger.exception(e)
+    #     sys.exit("Failed: Could not load input files.")
     
     topcell_name = args["--top-cell"]
     if render_to_outfile:

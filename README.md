@@ -1,3 +1,30 @@
+<h1 align=center> Fork of layout2svg by Z.D.M. on 4/20/25 </h1>
+
+An update was made to `cli.py` to handle path finding for the inkscape bin directory for Linux. 
+A function `parse_lyp_to_yaml()` was added to parse the open source GSD editor KLayout's layer files (.lyp) 
+and format them into the expected .yaml format.
+
+**Notes to get running:**
+
+Run the following:
+
+```bash
+conda create -n gds2svg python=3.10
+conda activate gds2svg
+conda install -c conda-forge numpy lxml gdstk klayout
+```
+
+Update the requirements file with `klayout==0.28.17.post1` and run:
+
+```bash
+pip install --no-deps -r requirements.txt
+```
+
+Install an editable version of the package locally using `pip install -e .` inside the cloned directory.
+
+Use command `layout2svg -i Double_Dot_test.gds -o Double_dot_test.svg -t Double_dot_test.lyp` with the in-house test 
+files to ensure everything was installed/setup properly.
+
 <h1 align=center> layout2svg </h1>
 
 <div align=justify>

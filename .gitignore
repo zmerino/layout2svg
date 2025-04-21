@@ -1,3 +1,7 @@
 layout2svg.log
 scripts
 dist
+
+# my files - zdm
+/hidden
+*.log
