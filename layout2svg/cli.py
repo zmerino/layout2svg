@@ -51,7 +51,7 @@ try:
     elif platform.system() == "Darwin":
         INKSCAPE_BIN = subprocess.check_output(["which", "inkscape"]).decode("utf-8").strip()
     elif platform.system() == "Linux":
-        # INKSCAPE_BIN = subprocess.check_output(["command", "-v", "inkscape"]).decode("utf-8").strip()
+        # OLD: INKSCAPE_BIN = subprocess.check_output(["command", "-v", "inkscape"]).decode("utf-8").strip()
         INKSCAPE_BIN = shutil.which("inkscape")
         if INKSCAPE_BIN is None:
             raise RuntimeError("Inkscape not found in PATH")
